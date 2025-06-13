@@ -12,6 +12,7 @@
 #include <zephyr/pm/device.h>
 #include <zmk/keymap.h>
 #include <zmk/events/activity_state_changed.h>
+#include <zmk/endpoints.h>
 #include "pmw3610.h"
 
 #include <zephyr/logging/log.h>
@@ -398,11 +399,23 @@ static int pmw3610_report_data(const struct device *dev) {
     static int64_t dx = 0;
     static int64_t dy = 0;
 
-#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0
+
+/* timers used for both legacy and BLE-specific throttles */
++#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0 || CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN > 0
     static int64_t last_smp_time = 0;
     static int64_t last_rpt_time = 0;
     int64_t now = k_uptime_get();
-#endif
+
+    /* pick which throttle to apply: USB gets the legacy knob, BLE gets the new one */
+    const struct zmk_endpoint_instance *ep = zmk_endpoints_selected();
+    bool usb_active = ep && (ep->transport == ZMK_TRANSPORT_USB);
+
+    uint32_t min_int = usb_active
+        ? CONFIG_PMW3610_REPORT_INTERVAL_MIN
+        : (CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN > 0
+               ? CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN
+               : CONFIG_PMW3610_REPORT_INTERVAL_MIN);
++#endif
 
 	int err = pmw3610_read(dev, PMW3610_REG_MOTION_BURST, buf, PMW3610_BURST_SIZE);
     if (err) {
@@ -443,9 +456,9 @@ static int pmw3610_report_data(const struct device *dev) {
     }
 #endif
 
-#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0
-    // purge accumulated delta, if last sampled had not been reported on last report tick
-    if (now - last_smp_time >= CONFIG_PMW3610_REPORT_INTERVAL_MIN) {
+#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0 || CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN > 0
+    /* purge accumulated delta if the last sample is older than the active interval */
+    if (now - last_smp_time >= min_int) {
         dx = 0;
         dy = 0;
     }
@@ -456,9 +469,9 @@ static int pmw3610_report_data(const struct device *dev) {
     dx += x;
     dy += y;
 
-#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0
-    // strict to report inerval
-    if (now - last_rpt_time < CONFIG_PMW3610_REPORT_INTERVAL_MIN) {
+#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0 || CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN > 0
+    /* respect the active interval */
+    if (now - last_rpt_time < min_int) {
         return 0;
     }
 #endif
@@ -470,7 +483,7 @@ static int pmw3610_report_data(const struct device *dev) {
     bool have_y = ry != 0;
 
     if (have_x || have_y) {
-#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0
++#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0 || CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN > 0
         last_rpt_time = now;
 #endif
         dx = 0;
