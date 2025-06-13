@@ -483,7 +483,7 @@ static int pmw3610_report_data(const struct device *dev) {
     bool have_y = ry != 0;
 
     if (have_x || have_y) {
-+#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0 || CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN > 0
+#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0 || CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN > 0
         last_rpt_time = now;
 #endif
         dx = 0;
