@@ -401,7 +401,7 @@ static int pmw3610_report_data(const struct device *dev) {
 
 
 /* timers used for both legacy and BLE-specific throttles */
-+#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0 || CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN > 0
+#if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0 || CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN > 0
     static int64_t last_smp_time = 0;
     static int64_t last_rpt_time = 0;
     int64_t now = k_uptime_get();
@@ -415,7 +415,7 @@ static int pmw3610_report_data(const struct device *dev) {
         : (CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN > 0
                ? CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN
                : CONFIG_PMW3610_REPORT_INTERVAL_MIN);
-+#endif
+#endif
 
 	int err = pmw3610_read(dev, PMW3610_REG_MOTION_BURST, buf, PMW3610_BURST_SIZE);
     if (err) {
