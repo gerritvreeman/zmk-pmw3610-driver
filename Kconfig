@@ -46,7 +46,6 @@ config PMW3610_REPORT_INTERVAL_MIN
 config PMW3610_BLE_REPORT_INTERVAL_MIN
     int "PMW3610 minimum report interval **over BLE only** (ms)"
     default 0
-    depends on ZMK_HID
     help
       If non-zero, this value overrides PMW3610_REPORT_INTERVAL_MIN whenever the
       selected endpoint’s transport is BLE.  USB reports are never throttled by
