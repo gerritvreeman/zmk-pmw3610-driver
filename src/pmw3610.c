@@ -12,7 +12,7 @@
 #include <zephyr/pm/device.h>
 #include <zmk/keymap.h>
 #include <zmk/events/activity_state_changed.h>
-#include <zmk/usb.h>
+#include <zmk/endpoints.h>
 #include "pmw3610.h"
 
 #include <zephyr/logging/log.h>
@@ -399,15 +399,15 @@ static int pmw3610_report_data(const struct device *dev) {
     static int64_t dx = 0;
     static int64_t dy = 0;
 
-
 /* timers used for both legacy and BLE-specific throttles */
 #if CONFIG_PMW3610_REPORT_INTERVAL_MIN > 0 || CONFIG_PMW3610_BLE_REPORT_INTERVAL_MIN > 0
     static int64_t last_smp_time = 0;
     static int64_t last_rpt_time = 0;
     int64_t now = k_uptime_get();
 
-    /* USB is active only while the cable is enumerated */
-    bool usb_active = zmk_usb_is_active();
+    /* Which transport was LAST selected? */
+    struct zmk_endpoint_instance ep = zmk_endpoints_selected();
+    bool usb_active = (ep.transport == ZMK_TRANSPORT_USB);
 
     uint32_t min_int = usb_active
         ? CONFIG_PMW3610_REPORT_INTERVAL_MIN
